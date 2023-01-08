@@ -3,7 +3,7 @@
     "Terraria": {
       "commandName": "Executable",
       "executablePath": "C:/Program Files (x86)/Steam/steamapps/common/tModLoader/dotnet/6.0.0/dotnet.exe",
-      "commandLineArgs": "$(tMLPath)",
+      "commandLineArgs": "$(tMLPath) -unsafe true",
       "workingDirectory": "$(tMLSteamPath)"
     },
     "TerrariaServer": {

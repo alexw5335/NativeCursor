@@ -1,7 +1,7 @@
 Replaces the cursor with the native operating system's cursor
-- Fixes floaty cursor, which is caused by vsync
-- The cursor will now move much more fluidly and it will not lag behind
+- Fixes laggy/floaty cursor, which is caused by v-sync
 - Probably incompatible with any mods that change the cursor
-- Might not work on all computers and operating systems
-- I haven't tested it much, so there may be some issues
-- Anything that follows the cursor (e.g. tooltips and dragged items) will unfortunately now lag behind the cursor.
+- Only tested on Windows, may not work on all operating systems
+- Anything that follows the cursor (e.g. tooltips and dragged items) will unfortunately now lag behind the cursor
+- Added contextual cursors for smart cursor, quick trash, favourite, etc.
+- Source code: https://github.com/alexw5335/NativeCursor

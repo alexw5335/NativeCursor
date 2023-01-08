@@ -18,7 +18,7 @@ public class NativeCursorModSystem : ModSystem {
 	// Keep track of current cursor to avoid unnecessary SDL calls
 	private static int currentIndex;
 	
-	// Restores to cursor to normal when exiting to main menu in case smart cursor is still active
+	// Restores the cursor to normal when exiting to main menu in case smart cursor is still active
 	public override void OnWorldUnload() {
 		if (currentIndex == 0) return;
 		currentIndex = 0;

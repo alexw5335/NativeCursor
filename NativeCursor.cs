@@ -1,15 +1,96 @@
 using System;
+using System.ComponentModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using SDL2;
+using static SDL2.SDL.SDL_SystemCursor;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ModLoader.Config;
+
 
 namespace NativeCursor;
+
+
+
+public enum CursorGraphic {
+	
+	// System cursors, created using SDL.SDL_CreateSystemCursor
+	ARROW,
+	HAND,
+	IBEAM,
+	NO,
+	CROSSHAIR,
+	SIZE_NWSE,
+	SIZE_NESW,
+	SIZE_WE,
+	SIZE_NS,
+	SIZE_ALL,
+	
+	// Custom cursors, created using SDL.SDL_CreateColorCursor
+	CUSTOM_SMART,
+	CUSTOM_QUICK_TRASH,
+	CUSTOM_FAVOURITE,
+	CUSTOM_CHAT_SHARE,
+	CUSTOM_SELL
+
+}
+
+
+
+public class NativeCursorConfig : ModConfig {
+	
+	[Label("Default cursor")]
+	[Tooltip("The cursor graphic to display by default and in menus")]
+	[DefaultValue(CursorGraphic.ARROW)]
+	public CursorGraphic DefaultCursor;
+	
+	[Label("Smart cursor cursor")]
+	[Tooltip("The cursor graphic to display when smart cursor is being used")]
+	[DefaultValue(CursorGraphic.CUSTOM_SMART)]
+	public CursorGraphic SmartCursorCursor;
+
+	[Label("Quick trash cursor")]
+	[Tooltip("The cursor graphic to display when quick-trashing an item")]
+	[DefaultValue(CursorGraphic.CUSTOM_QUICK_TRASH)]
+	public CursorGraphic QuickTrashCursor;
+	
+	[Label("Favourite cursor")]
+	[Tooltip("The cursor graphic to display when favouriting an item")]
+	[DefaultValue(CursorGraphic.CUSTOM_FAVOURITE)]
+	public CursorGraphic FavouriteCursor;
+	
+	[Label("Chat share cursor")]
+	[Tooltip("The cursor graphic to display when sharing an item in chat")]
+	[DefaultValue(CursorGraphic.CUSTOM_CHAT_SHARE)]
+	public CursorGraphic ChatShareCursor;
+	
+	[Label("Sell cursor")]
+	[Tooltip("The cursor graphic to display when selling an item")]
+	[DefaultValue(CursorGraphic.CUSTOM_SELL)]
+	public CursorGraphic SellCursor;
+
+	[Label("Inventory transfer cursor")]
+	[Tooltip("The cursor graphic to display when transferring items to or from the player's inventory")]
+	[DefaultValue(CursorGraphic.SIZE_NS)]
+	public CursorGraphic TransferCursor;
+	
+	[Label("Un-equip cursor")]
+	[Tooltip("The cursor graphic to display when un-equipping armour or accessories")]
+	[DefaultValue(CursorGraphic.SIZE_WE)]
+	public CursorGraphic UnequipCursor;
+
+	public override ConfigScope Mode => ConfigScope.ClientSide;
+
+	public override void OnChanged() {
+		NativeCursor.ReloadCursors(this);
+	}
+	
+}
 
 
 
@@ -20,11 +101,13 @@ public class NativeCursorModSystem : ModSystem {
 	
 	// Restores the cursor to normal when exiting to main menu in case smart cursor is still active
 	public override void OnWorldUnload() {
+		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
 		if (currentIndex == 0) return;
 		currentIndex = 0;
 		SDL.SDL_SetCursor(NativeCursor.Cursors[0]);
 	}
 	
+	// Note: Not called in main menu
 	public override void PostDrawInterface(SpriteBatch spriteBatch) {
 		var index = Main.cursorOverride;
 		if (index <= 1 && Main.SmartCursorIsUsed) index = 1;
@@ -39,16 +122,20 @@ public class NativeCursorModSystem : ModSystem {
 
 
 public class NativeCursor : Mod {
+
 	
-	// These SDL cursor handles correspond to TextureAssets::cursors
+	// SDL cursor handles that correspond to TextureAssets::cursors
 	// The cursor to be displayed is determined by Main::mouseOverride and Main::SmartCursorIsUsed
 	public static IntPtr[] Cursors = new IntPtr[TextureAssets.Cursors.Length];
+	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.CUSTOM_SELL + 1];
 
-	// Restore mouse colours on unload
+	// Restore mouse colours on Unload. These are set in Load
 	private Color previousMouseColour = Color.Black;
 	private Color previousMouseBorderColour = Color.Black;
 	
 	private static bool initialised;
+	
+	
 	
 	// Must add "-unsafe true" to commandLineArgs in Properties/launchSettings.json
 	private static unsafe IntPtr createCursor(int[] data, int xOffset, int yOffset) {
@@ -64,19 +151,45 @@ public class NativeCursor : Mod {
 			return SDL.SDL_CreateColorCursor(surface, xOffset, yOffset);
 		}
 	}
+
+	
+	
+	public static void ReloadCursors(NativeCursorConfig config) {
+		for (var i = 0; i < Cursors.Length; i++)
+			Cursors[i] = ConfigCursors[(int) config.DefaultCursor];
+		Cursors[0] = ConfigCursors[(int) config.DefaultCursor];
+		Cursors[1] = ConfigCursors[(int) config.SmartCursorCursor];
+		Cursors[2] = ConfigCursors[(int) config.ChatShareCursor];
+		Cursors[3] = ConfigCursors[(int) config.FavouriteCursor];
+		Cursors[6] = ConfigCursors[(int) config.QuickTrashCursor];
+		Cursors[7] = ConfigCursors[(int) config.UnequipCursor];
+		Cursors[8] = ConfigCursors[(int) config.TransferCursor];
+		Cursors[9] = ConfigCursors[(int) config.TransferCursor];
+		Cursors[10] = ConfigCursors[(int) config.SellCursor];
+		SDL.SDL_SetCursor(Cursors[0]); // restore cursor in case smart cursor is being used in the main menu
+	}
+	
+	
 	
 	public static void Init() {
-		for (var i = 0; i < Cursors.Length; i++)
-			Cursors[i] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND);
-		Cursors[0] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
-		Cursors[1] = createCursor(Textures.SMART_CURSOR, 1, 1);
-		Cursors[2] = createCursor(Textures.CHAT_SHARE, 7, 7);
-		Cursors[3] = createCursor(Textures.FAVOURITE, 1, 1);
-		Cursors[6] = createCursor(Textures.BIN, 9, 0);
-		Cursors[8] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS);
-		Cursors[9] = SDL.SDL_CreateSystemCursor(SDL.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS);
-		Cursors[10] = createCursor(Textures.SELL, 7, 0);
+		ConfigCursors[(int) CursorGraphic.ARROW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+		ConfigCursors[(int) CursorGraphic.HAND] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		ConfigCursors[(int) CursorGraphic.IBEAM] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+		ConfigCursors[(int) CursorGraphic.NO] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+		ConfigCursors[(int) CursorGraphic.CROSSHAIR] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+		ConfigCursors[(int) CursorGraphic.SIZE_NWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+		ConfigCursors[(int) CursorGraphic.SIZE_NESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+		ConfigCursors[(int) CursorGraphic.SIZE_WE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+		ConfigCursors[(int) CursorGraphic.SIZE_NS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+		ConfigCursors[(int) CursorGraphic.SIZE_ALL] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+		ConfigCursors[(int) CursorGraphic.CUSTOM_SMART] = createCursor(Textures.SMART_CURSOR, 1, 1);
+		ConfigCursors[(int) CursorGraphic.CUSTOM_QUICK_TRASH] = createCursor(Textures.BIN, 9, 0);
+		ConfigCursors[(int) CursorGraphic.CUSTOM_FAVOURITE] = createCursor(Textures.FAVOURITE, 1, 1);
+		ConfigCursors[(int) CursorGraphic.CUSTOM_CHAT_SHARE] = createCursor(Textures.CHAT_SHARE, 7, 7);
+		ConfigCursors[(int) CursorGraphic.CUSTOM_SELL] = createCursor(Textures.SELL, 7, 0);
 	}
+	
+	
 	
 	public override void Load() {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
@@ -88,7 +201,10 @@ public class NativeCursor : Mod {
 		IL.Terraria.Main.DoUpdate += HideCursor;
 		if (!initialised) Init();
 		initialised = true;
+		ReloadCursors(ModContent.GetInstance<NativeCursorConfig>());
 	}
+	
+	
 	
 	public override void Unload() {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
@@ -99,8 +215,12 @@ public class NativeCursor : Mod {
 		IL.Terraria.Main.DoUpdate -= HideCursor;
 	}
 	
+	
+	
 	// Early return from methods that draw the game's custom cursor
 	private static void Ret(ILContext context) => new ILCursor(context).Emit(OpCodes.Ret);
+	
+	
 	
 	// Main::DoUpdate
 	// 643 IL_08b7: ldarg.0      // this
@@ -112,6 +232,7 @@ public class NativeCursor : Mod {
 		cursor.Remove();
 		cursor.Emit(OpCodes.Ldc_I4_1); // isMouseVisible = false -> isMouseVisible = true
 	}
+	
 	
 }
 

@@ -166,6 +166,10 @@ public class NativeCursor : Mod {
 		Cursors[8] = ConfigCursors[(int) config.TransferCursor];
 		Cursors[9] = ConfigCursors[(int) config.TransferCursor];
 		Cursors[10] = ConfigCursors[(int) config.SellCursor];
+		// Cursors 4 and 5 are used for the capture interface but are never used as cursor overrides
+		// AutoTrash sets the cursor override to 5 for some reason, so this is included for compatibility
+		Cursors[5] = ConfigCursors[(int) config.QuickTrashCursor];
+		
 		SDL.SDL_SetCursor(Cursors[0]); // restore cursor in case smart cursor is being used in the main menu
 	}
 	
@@ -199,6 +203,7 @@ public class NativeCursor : Mod {
 		IL.Terraria.Main.DrawCursor += Ret;
 		IL.Terraria.Main.DrawInterface_36_Cursor += Ret;
 		IL.Terraria.Main.DoUpdate += HideCursor;
+		IL.Terraria.Graphics.Capture.CaptureInterface.Draw += HideCaptureCursor;
 		if (!initialised) Init();
 		initialised = true;
 		ReloadCursors(ModContent.GetInstance<NativeCursorConfig>());
@@ -213,6 +218,7 @@ public class NativeCursor : Mod {
 		IL.Terraria.Main.DrawCursor -= Ret;
 		IL.Terraria.Main.DrawInterface_36_Cursor -= Ret;
 		IL.Terraria.Main.DoUpdate -= HideCursor;
+		IL.Terraria.Graphics.Capture.CaptureInterface.Draw -= HideCaptureCursor;
 	}
 	
 	
@@ -223,14 +229,23 @@ public class NativeCursor : Mod {
 	
 	
 	// Main::DoUpdate
-	// 643 IL_08b7: ldarg.0      // this
-	// 644 IL_08b8: ldc.i4.0
-	// 645 IL_08b9: call         instance void [FNA]Microsoft.Xna.Framework.Game::set_IsMouseVisible(bool)
+	// isMouseVisible = false -> isMouseVisible = true
 	private static void HideCursor(ILContext context) {
 		var cursor = new ILCursor(context);
 		cursor.Goto(644);
 		cursor.Remove();
-		cursor.Emit(OpCodes.Ldc_I4_1); // isMouseVisible = false -> isMouseVisible = true
+		cursor.Emit(OpCodes.Ldc_I4_1);
+	}
+
+	
+
+	// CaptureInterface::Draw
+	// Prevent call to DrawCursorSingle
+	private static void HideCaptureCursor(ILContext context) {
+		var cursor = new ILCursor(context);
+		Console.WriteLine(cursor.Instrs[81]);
+		cursor.Goto(72);
+		cursor.RemoveRange(10);
 	}
 	
 	

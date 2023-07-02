@@ -1,0 +1,64 @@
+Configs: {
+	NativeCursorConfig: {
+		DisplayName: Native Cursor Config
+
+		DefaultCursor: {
+			Label: Default cursor
+			Tooltip: The cursor graphic to display by default and in menus
+		}
+
+		SmartCursorCursor: {
+			Label: Smart cursor cursor
+			Tooltip: The cursor graphic to display when smart cursor is being used
+		}
+
+		QuickTrashCursor: {
+			Label: Quick trash cursor
+			Tooltip: The cursor graphic to display when quick-trashing an item
+		}
+
+		FavouriteCursor: {
+			Label: Favourite cursor
+			Tooltip: The cursor graphic to display when favouriting an item
+		}
+
+		ChatShareCursor: {
+			Label: Chat share cursor
+			Tooltip: The cursor graphic to display when sharing an item in chat
+		}
+
+		SellCursor: {
+			Label: Sell cursor
+			Tooltip: The cursor graphic to display when selling an item
+		}
+
+		TransferCursor: {
+			Label: Inventory transfer cursor
+			Tooltip: The cursor graphic to display when transferring items to or from the player's inventory
+		}
+
+		UnequipCursor: {
+			Label: Un-equip cursor
+			Tooltip: The cursor graphic to display when un-equipping armour or accessories
+		}
+	}
+
+	CursorGraphic: {
+		Tooltip: ""
+		ARROW.Label: A R R O W
+		HAND.Label: H A N D
+		IBEAM.Label: I B E A M
+		NO.Label: N O
+		CROSSHAIR.Label: C R O S S H A I R
+		SIZE_NWSE.Label: S I Z E_ N W S E
+		SIZE_NESW.Label: S I Z E_ N E S W
+		SIZE_WE.Label: S I Z E_ W E
+		SIZE_NS.Label: S I Z E_ N S
+		SIZE_ALL.Label: S I Z E_ A L L
+		CUSTOM_SMART.Label: C U S T O M_ S M A R T
+		CUSTOM_QUICK_TRASH.Label: C U S T O M_ Q U I C K_ T R A S H
+		CUSTOM_FAVOURITE.Label: C U S T O M_ F A V O U R I T E
+		CUSTOM_CHAT_SHARE.Label: C U S T O M_ C H A T_ S H A R E
+		CUSTOM_SELL.Label: C U S T O M_ S E L L
+	}
+}

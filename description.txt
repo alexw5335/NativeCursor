@@ -1,4 +1,5 @@
 Replaces the cursor with the native operating system's cursor
+- Updated to 1.4.4
 - Fixes laggy/floaty cursor, which is caused by v-sync
 - Probably incompatible with any mods that change the cursor
 - Only tested on Windows, may not work on all operating systems

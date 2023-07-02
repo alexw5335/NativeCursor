@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
+using Iced.Intel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using SDL2;
@@ -44,43 +46,27 @@ public enum CursorGraphic {
 
 public class NativeCursorConfig : ModConfig {
 	
-	[Label("Default cursor")]
-	[Tooltip("The cursor graphic to display by default and in menus")]
 	[DefaultValue(CursorGraphic.ARROW)]
 	public CursorGraphic DefaultCursor;
 	
-	[Label("Smart cursor cursor")]
-	[Tooltip("The cursor graphic to display when smart cursor is being used")]
 	[DefaultValue(CursorGraphic.CUSTOM_SMART)]
 	public CursorGraphic SmartCursorCursor;
 
-	[Label("Quick trash cursor")]
-	[Tooltip("The cursor graphic to display when quick-trashing an item")]
 	[DefaultValue(CursorGraphic.CUSTOM_QUICK_TRASH)]
 	public CursorGraphic QuickTrashCursor;
 	
-	[Label("Favourite cursor")]
-	[Tooltip("The cursor graphic to display when favouriting an item")]
 	[DefaultValue(CursorGraphic.CUSTOM_FAVOURITE)]
 	public CursorGraphic FavouriteCursor;
 	
-	[Label("Chat share cursor")]
-	[Tooltip("The cursor graphic to display when sharing an item in chat")]
 	[DefaultValue(CursorGraphic.CUSTOM_CHAT_SHARE)]
 	public CursorGraphic ChatShareCursor;
 	
-	[Label("Sell cursor")]
-	[Tooltip("The cursor graphic to display when selling an item")]
 	[DefaultValue(CursorGraphic.CUSTOM_SELL)]
 	public CursorGraphic SellCursor;
-
-	[Label("Inventory transfer cursor")]
-	[Tooltip("The cursor graphic to display when transferring items to or from the player's inventory")]
+	
 	[DefaultValue(CursorGraphic.SIZE_NS)]
 	public CursorGraphic TransferCursor;
 	
-	[Label("Un-equip cursor")]
-	[Tooltip("The cursor graphic to display when un-equipping armour or accessories")]
 	[DefaultValue(CursorGraphic.SIZE_WE)]
 	public CursorGraphic UnequipCursor;
 
@@ -101,7 +87,7 @@ public class NativeCursorModSystem : ModSystem {
 	
 	// Restores the cursor to normal when exiting to main menu in case smart cursor is still active
 	public override void OnWorldUnload() {
-		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
+		if(Main.netMode == NetmodeID.Server || Main.instance == null) return; 
 		if (currentIndex == 0) return;
 		currentIndex = 0;
 		SDL.SDL_SetCursor(NativeCursor.Cursors[0]);
@@ -200,10 +186,10 @@ public class NativeCursor : Mod {
 		previousMouseColour = Main.mouseColor;
 		previousMouseBorderColour = Main.MouseBorderColor;
 		Main.MouseBorderColor = Color.Transparent; // Disable drawing of the cursor's outline and background
-		IL.Terraria.Main.DrawCursor += Ret;
-		IL.Terraria.Main.DrawInterface_36_Cursor += Ret;
-		IL.Terraria.Main.DoUpdate += HideCursor;
-		IL.Terraria.Graphics.Capture.CaptureInterface.Draw += HideCaptureCursor;
+		IL_Main.DrawCursor += Ret;
+		IL_Main.DrawInterface_36_Cursor += Ret;
+		IL_Main.DoUpdate += HideCursor;
+		Terraria.Graphics.Capture.IL_CaptureInterface.Draw += HideCaptureCursor;
 		if (!initialised) Init();
 		initialised = true;
 		ReloadCursors(ModContent.GetInstance<NativeCursorConfig>());
@@ -215,10 +201,10 @@ public class NativeCursor : Mod {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
 		Main.mouseColor = previousMouseColour;
 		Main.MouseBorderColor = previousMouseBorderColour;
-		IL.Terraria.Main.DrawCursor -= Ret;
-		IL.Terraria.Main.DrawInterface_36_Cursor -= Ret;
-		IL.Terraria.Main.DoUpdate -= HideCursor;
-		IL.Terraria.Graphics.Capture.CaptureInterface.Draw -= HideCaptureCursor;
+		IL_Main.DrawCursor -= Ret;
+		IL_Main.DrawInterface_36_Cursor -= Ret;
+		IL_Main.DoUpdate -= HideCursor;
+		Terraria.Graphics.Capture.IL_CaptureInterface.Draw -= HideCaptureCursor;
 	}
 	
 	
@@ -232,9 +218,14 @@ public class NativeCursor : Mod {
 	// isMouseVisible = false -> isMouseVisible = true
 	private static void HideCursor(ILContext context) {
 		var cursor = new ILCursor(context);
-		cursor.Goto(644);
-		cursor.Remove();
-		cursor.Emit(OpCodes.Ldc_I4_1);
+		var method = typeof(Main).GetMethod("set_IsMouseVisible");
+		if (method == null) throw new Exception();
+		while (cursor.TryGotoNext(i => i.MatchCall(method))) {
+			if (cursor.Prev.OpCode != OpCodes.Ldc_I4_0) continue;
+			cursor.GotoPrev();
+			cursor.Remove();
+			cursor.Emit(OpCodes.Ldc_I4_1);
+		}
 	}
 
 	

@@ -41,24 +41,44 @@ Configs: {
 			Label: Un-equip cursor
 			Tooltip: The cursor graphic to display when un-equipping armour or accessories
 		}
+
+		largeCursorPreset: {
+			Label: Large Cursor Preset
+			Tooltip: "Note: "
+		}
+
+		LargeCursorPreset: {
+			Label: Large Cursor Preset
+			Tooltip: ""
+		}
 	}
 
 	CursorGraphic: {
 		Tooltip: ""
-		ARROW.Label: A R R O W
-		HAND.Label: H A N D
-		IBEAM.Label: I B E A M
-		NO.Label: N O
-		CROSSHAIR.Label: C R O S S H A I R
-		SIZE_NWSE.Label: S I Z E_ N W S E
-		SIZE_NESW.Label: S I Z E_ N E S W
-		SIZE_WE.Label: S I Z E_ W E
-		SIZE_NS.Label: S I Z E_ N S
-		SIZE_ALL.Label: S I Z E_ A L L
-		CUSTOM_SMART.Label: C U S T O M_ S M A R T
-		CUSTOM_QUICK_TRASH.Label: C U S T O M_ Q U I C K_ T R A S H
-		CUSTOM_FAVOURITE.Label: C U S T O M_ F A V O U R I T E
-		CUSTOM_CHAT_SHARE.Label: C U S T O M_ C H A T_ S H A R E
-		CUSTOM_SELL.Label: C U S T O M_ S E L L
+		NativeArrow.Label: Native Arrow
+		NativeHand.Label: Native Hand
+		NativeIBeam.Label: Native IBeam
+		NativeNo.Label: Native No
+		NativeCrosshair.Label: Native Crosshair
+		NativeSizeNWSE.Label: Native Size NWSE
+		NativeSizeNESW.Label: Native Size NESW
+		NativeSizeWE.Label: Native Size WE
+		NativeSizeNS.Label: Native Size NS
+		NativeSizeAll.Label: Native Size All
+		Gold.Label: Gold
+		Bin.Label: Bin
+		Pin.Label: Pin
+		Magnifier.Label: Magnifier
+		Dollar.Label: Dollar
+		BrightRed.Label: Bright Red
+		BrightGreen.Label: Bright Green
+		LargeGold.Label: Large Gold
+		LargeBin.Label: Large Bin
+		LargePin.Label: Large Pin
+		LargeMagnifier.Label: Large Magnifier
+		LargeDollar.Label: Large Dollar
+		LargeBrightRed.Label: Large Bright Red
+		LargeBrightGreen.Label: Large Bright Green
+		LargeArrow.Label: Large Arrow
 	}
 }

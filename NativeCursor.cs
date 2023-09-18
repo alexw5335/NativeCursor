@@ -1,44 +1,98 @@
 using System;
 using System.ComponentModel;
-using Iced.Intel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using SDL2;
 using static SDL2.SDL.SDL_SystemCursor;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.Config;
+using Terraria.ModLoader.Config.UI;
+using Terraria.ModLoader.UI;
+using Terraria.UI;
 
 
 namespace NativeCursor;
+
+
+// Taken from https://github.com/487666123/ImproveGame/blob/1.4.4/Common/Configs/Elements/PresetElement.cs
+public class LargeCursorElement : ConfigElement {
+	
+	public override void LeftClick(UIMouseEvent evt) {
+		base.LeftClick(evt);
+		if (Item is not NativeCursorConfig config) return;
+		config.DefaultCursor     = CursorGraphic.LargeArrow;
+		config.SmartCursorCursor = CursorGraphic.LargeGold;
+		config.QuickTrashCursor  = CursorGraphic.LargeBin;
+		config.FavouriteCursor   = CursorGraphic.LargePin;
+		config.ChatShareCursor   = CursorGraphic.LargeMagnifier;
+		config.SellCursor        = CursorGraphic.LargeDollar;
+		SetObject(true);
+	}
+
+	public override void OnBind() {
+		base.OnBind();
+		Height.Set(30F, 0F);
+		DrawLabel = false;
+		
+		Append(new UIText(Label, 0.4f, true) {
+			TextOriginX = 0.5f,
+			TextOriginY = 0.5f,
+			Width = StyleDimension.Fill,
+			Height = StyleDimension.Fill
+		});
+	}
+	
+	protected override void DrawSelf(SpriteBatch spriteBatch) {
+		var dimensions = GetDimensions();
+		var num = dimensions.Width + 1f;
+		var pos = new Vector2(dimensions.X, dimensions.Y);
+		var color = IsMouseHovering ? UICommon.DefaultUIBlue : UICommon.DefaultUIBlue.MultiplyRGBA(new Color(180, 180, 180));
+		DrawPanel2(spriteBatch, pos, TextureAssets.SettingsPanel.Value, num, dimensions.Height, color);
+
+		base.DrawSelf(spriteBatch);
+	}
+	
+}
 
 
 
 public enum CursorGraphic {
 	
 	// System cursors, created using SDL.SDL_CreateSystemCursor
-	ARROW,
-	HAND,
-	IBEAM,
-	NO,
-	CROSSHAIR,
-	SIZE_NWSE,
-	SIZE_NESW,
-	SIZE_WE,
-	SIZE_NS,
-	SIZE_ALL,
+	NativeArrow,
+	NativeHand,
+	NativeIBeam,
+	NativeNo,
+	NativeCrosshair,
+	NativeSizeNWSE,
+	NativeSizeNESW,
+	NativeSizeWE,
+	NativeSizeNS,
+	NativeSizeAll,
 	
 	// Custom cursors, created using SDL.SDL_CreateColorCursor
-	CUSTOM_SMART,
-	CUSTOM_QUICK_TRASH,
-	CUSTOM_FAVOURITE,
-	CUSTOM_CHAT_SHARE,
-	CUSTOM_SELL
+	Gold,
+	Bin,
+	Pin,
+	Magnifier,
+	Dollar,
+	BrightRed,
+	BrightGreen,
+	
+	LargeGold,
+	LargeBin,
+	LargePin,
+	LargeMagnifier,
+	LargeDollar,
+	LargeBrightRed,
+	LargeBrightGreen,
+	LargeArrow
 
 }
 
@@ -46,32 +100,36 @@ public enum CursorGraphic {
 
 public class NativeCursorConfig : ModConfig {
 	
-	[DefaultValue(CursorGraphic.ARROW)]
+	[DefaultValue(CursorGraphic.NativeArrow)]
 	public CursorGraphic DefaultCursor;
 	
-	[DefaultValue(CursorGraphic.CUSTOM_SMART)]
+	[DefaultValue(CursorGraphic.Gold)]
 	public CursorGraphic SmartCursorCursor;
 
-	[DefaultValue(CursorGraphic.CUSTOM_QUICK_TRASH)]
+	[DefaultValue(CursorGraphic.Bin)]
 	public CursorGraphic QuickTrashCursor;
 	
-	[DefaultValue(CursorGraphic.CUSTOM_FAVOURITE)]
+	[DefaultValue(CursorGraphic.Pin)]
 	public CursorGraphic FavouriteCursor;
 	
-	[DefaultValue(CursorGraphic.CUSTOM_CHAT_SHARE)]
+	[DefaultValue(CursorGraphic.Magnifier)]
 	public CursorGraphic ChatShareCursor;
 	
-	[DefaultValue(CursorGraphic.CUSTOM_SELL)]
+	[DefaultValue(CursorGraphic.Dollar)]
 	public CursorGraphic SellCursor;
 	
-	[DefaultValue(CursorGraphic.SIZE_NS)]
+	[DefaultValue(CursorGraphic.NativeSizeNS)]
 	public CursorGraphic TransferCursor;
 	
-	[DefaultValue(CursorGraphic.SIZE_WE)]
+	[DefaultValue(CursorGraphic.NativeSizeWE)]
 	public CursorGraphic UnequipCursor;
 
-	public override ConfigScope Mode => ConfigScope.ClientSide;
+	[CustomModConfigItem(typeof(LargeCursorElement))]
+	public bool LargeCursorPreset;
 
+
+	public override ConfigScope Mode => ConfigScope.ClientSide;
+	
 	public override void OnChanged() {
 		NativeCursor.ReloadCursors(this);
 	}
@@ -108,14 +166,13 @@ public class NativeCursorModSystem : ModSystem {
 
 
 public class NativeCursor : Mod {
-
 	
 	// SDL cursor handles that correspond to TextureAssets::cursors
 	// The cursor to be displayed is determined by Main::mouseOverride and Main::SmartCursorIsUsed
 	public static IntPtr[] Cursors = new IntPtr[TextureAssets.Cursors.Length];
-	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.CUSTOM_SELL + 1];
+	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.LargeArrow + 1];
 
-	// Restore mouse colours on Unload. These are set in Load
+	// Restore mouse colours on Unload. These are set in Load.
 	private Color previousMouseColour = Color.Black;
 	private Color previousMouseBorderColour = Color.Black;
 	
@@ -124,20 +181,26 @@ public class NativeCursor : Mod {
 	
 	
 	// Must add "-unsafe true" to commandLineArgs in Properties/launchSettings.json
-	private static unsafe IntPtr createCursor(int[] data, int xOffset, int yOffset) {
+	private static unsafe IntPtr createCursor(int[] data, int xOffset, int yOffset, int width = 32) {
 		fixed (int* pData = data) {
 			var surface = SDL.SDL_CreateRGBSurfaceWithFormatFrom(
 				new IntPtr(pData),
-				32,
-				32,
-				32,
-				32 * 4,
+				width,
+				width,
+				width,
+				width * 4,
 				SDL.SDL_PIXELFORMAT_RGBA8888
 			);
 			return SDL.SDL_CreateColorCursor(surface, xOffset, yOffset);
 		}
 	}
 
+	
+	
+	private static IntPtr createLargeCursor(int[] data, int xOffset, int yOffset) {
+		return createCursor(Textures.enlarge(data), xOffset * 2, yOffset * 2, 64);
+	}
+	
 	
 	
 	public static void ReloadCursors(NativeCursorConfig config) {
@@ -155,28 +218,36 @@ public class NativeCursor : Mod {
 		// Cursors 4 and 5 are used for the capture interface but are never used as cursor overrides
 		// AutoTrash sets the cursor override to 5 for some reason, so this is included for compatibility
 		Cursors[5] = ConfigCursors[(int) config.QuickTrashCursor];
-		
 		SDL.SDL_SetCursor(Cursors[0]); // restore cursor in case smart cursor is being used in the main menu
 	}
 	
 	
-	
 	public static void Init() {
-		ConfigCursors[(int) CursorGraphic.ARROW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-		ConfigCursors[(int) CursorGraphic.HAND] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-		ConfigCursors[(int) CursorGraphic.IBEAM] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-		ConfigCursors[(int) CursorGraphic.NO] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
-		ConfigCursors[(int) CursorGraphic.CROSSHAIR] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-		ConfigCursors[(int) CursorGraphic.SIZE_NWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-		ConfigCursors[(int) CursorGraphic.SIZE_NESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-		ConfigCursors[(int) CursorGraphic.SIZE_WE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-		ConfigCursors[(int) CursorGraphic.SIZE_NS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-		ConfigCursors[(int) CursorGraphic.SIZE_ALL] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-		ConfigCursors[(int) CursorGraphic.CUSTOM_SMART] = createCursor(Textures.SMART_CURSOR, 1, 1);
-		ConfigCursors[(int) CursorGraphic.CUSTOM_QUICK_TRASH] = createCursor(Textures.BIN, 9, 0);
-		ConfigCursors[(int) CursorGraphic.CUSTOM_FAVOURITE] = createCursor(Textures.FAVOURITE, 1, 1);
-		ConfigCursors[(int) CursorGraphic.CUSTOM_CHAT_SHARE] = createCursor(Textures.CHAT_SHARE, 7, 7);
-		ConfigCursors[(int) CursorGraphic.CUSTOM_SELL] = createCursor(Textures.SELL, 7, 0);
+		ConfigCursors[(int) CursorGraphic.NativeArrow] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+		ConfigCursors[(int) CursorGraphic.NativeHand] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		ConfigCursors[(int) CursorGraphic.NativeIBeam] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+		ConfigCursors[(int) CursorGraphic.NativeNo] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+		ConfigCursors[(int) CursorGraphic.NativeCrosshair] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+		ConfigCursors[(int) CursorGraphic.NativeSizeNWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+		ConfigCursors[(int) CursorGraphic.NativeSizeNESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+		ConfigCursors[(int) CursorGraphic.NativeSizeWE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+		ConfigCursors[(int) CursorGraphic.NativeSizeNS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+		ConfigCursors[(int) CursorGraphic.NativeSizeAll] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+		ConfigCursors[(int) CursorGraphic.Gold] = createCursor(Textures.Gold, 1, 1);
+		ConfigCursors[(int) CursorGraphic.Bin] = createCursor(Textures.Bin, 9, 0);
+		ConfigCursors[(int) CursorGraphic.Pin] = createCursor(Textures.Pin, 1, 1);
+		ConfigCursors[(int) CursorGraphic.Magnifier] = createCursor(Textures.Magnifier, 7, 7);
+		ConfigCursors[(int) CursorGraphic.Dollar] = createCursor(Textures.Dollar, 7, 0);
+		ConfigCursors[(int) CursorGraphic.BrightRed] = createCursor(Textures.Red, 1, 1);
+		ConfigCursors[(int) CursorGraphic.BrightGreen] = createCursor(Textures.Green, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LargeGold] = createLargeCursor(Textures.Gold, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LargeBin] = createLargeCursor(Textures.Bin, 9, 0);
+		ConfigCursors[(int) CursorGraphic.LargePin] = createLargeCursor(Textures.Pin, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LargeMagnifier] = createLargeCursor(Textures.Magnifier, 7, 7);
+		ConfigCursors[(int) CursorGraphic.LargeDollar] = createLargeCursor(Textures.Dollar, 7, 0);
+		ConfigCursors[(int) CursorGraphic.LargeBrightRed] = createLargeCursor(Textures.Red, 2, 2);
+		ConfigCursors[(int) CursorGraphic.LargeBrightGreen] = createLargeCursor(Textures.Green, 2, 2);
+		ConfigCursors[(int) CursorGraphic.LargeArrow] = createLargeCursor(Textures.Arrow, 0, 0);
 	}
 	
 	
@@ -194,9 +265,8 @@ public class NativeCursor : Mod {
 		initialised = true;
 		ReloadCursors(ModContent.GetInstance<NativeCursorConfig>());
 	}
-	
-	
-	
+
+
 	public override void Unload() {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
 		Main.mouseColor = previousMouseColour;
@@ -247,16 +317,138 @@ public class NativeCursor : Mod {
 public class Textures {
 
 	private static int rgba(int r, int g, int b, int a) => a | (b << 8) | (g << 16) | (r << 24);
-	private static int B = rgba(0, 0, 0, 255); // black
-	private static int W = rgba(255, 255, 255, 255); // white
-	private static int A = rgba(255, 180, 51, 255); // gold
-	private static int C = rgba(175, 175, 175, 255); // light grey
-	private static int D = rgba(125, 125, 125, 255); // grey
-	private static int E = rgba(75, 75, 75, 255); // dark grey
-	private static int F = rgba(100, 30, 90, 255); // dark red
-	private static int G = rgba(200, 70, 170, 255); // light red
+	private static readonly int B = rgba(0, 0, 0, 255); // black
+	private static readonly int W = rgba(255, 255, 255, 255); // white
+	private static readonly int A = rgba(255, 180, 51, 255); // gold
+	private static readonly int C = rgba(175, 175, 175, 255); // light grey
+	private static readonly int D = rgba(125, 125, 125, 255); // grey
+	private static readonly int E = rgba(75, 75, 75, 255); // dark grey
+	private static readonly int F = rgba(100, 30, 90, 255); // dark red
+	private static readonly int N = rgba(200, 70, 170, 255); // light red
+	private static readonly int R = rgba(255, 0, 0, 255); // bright red
+	private static readonly int G = rgba(0, 255, 0, 255); // bright green
+	
+	// 32x32 -> 64x64
+	public static int[] enlarge(int[] data) {
+		var enlarged = new int[data.Length * 4];
+		for (var i = 0; i < data.Length; i++) {
+			var value = data[i];
+			var x = i % 32 * 2;
+			var y = i / 32 * 2;
+			enlarged[x + y * 64] = value;
+			enlarged[x + 1 + y * 64] = value;
+			enlarged[x + (y + 1) * 64] = value;
+			enlarged[x + 1 + (y + 1) * 64] = value;
+		}
+		return enlarged;
+	}
+	
+	public static readonly int[] Green = {
+		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, G, G, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, G, G, G, B, B, B, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, G, B, G, G, B, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, G, B, B, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, G, B, W, W, B, G, G, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, B, W, W, W, B, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, W, W, 0, W, W, B, G, G, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, W, W, 0, 0, 0, W, B, G, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, W, W, B, G, G, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, W, B, G, G, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, W, W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	};
+	
+	public static readonly int[] Red = {
+		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, R, R, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, R, R, R, B, B, B, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, R, B, R, R, B, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, R, B, B, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, R, B, W, W, B, R, R, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, B, W, W, W, B, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, B, W, W, 0, W, W, B, R, R, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		W, W, W, 0, 0, 0, W, B, R, R, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, W, W, B, R, R, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, W, B, R, R, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, W, W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	};
 
-	public static int[] BIN = {
+	public static readonly int[] Arrow = {
+		B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, W, W, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, W, W, W, B, B, B, B, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, W, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, W, B, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, W, B, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, B, 0, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		B, 0, 0, 0, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, B, W, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, B, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	};
+	
+	public static readonly int[] Bin = {
 		0, 0, 0, 0, 0, 0, W, W, W, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, W, W, B, B, B, B, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, W, W, W, W, W, B, D, D, D, D, D, D, B, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -291,7 +483,7 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 	};
 
-	public static int[] SMART_CURSOR = {
+	public static readonly int[] Gold = {
 		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -326,7 +518,7 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	};
 	
-	public static int[] FAVOURITE = {
+	public static readonly int[] Pin = {
 		W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, D, C, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		W, E, D, C, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -339,14 +531,14 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, W, W, E, D, C, W, W, 0, 0, 0, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, W, W, 0, W, W, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, W, W, W, B, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, W, B, B, G, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, B, G, G, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, B, G, G, G, G, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, G, G, G, G, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, F, F, G, G, G, G, B, B, W, W, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, W, B, B, F, F, F, F, F, F, G, G, G, G, B, B, W, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, W, B, B, B, B, F, F, F, F, F, G, G, G, B, B, W, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, B, B, F, F, F, F, F, G, B, B, W, W, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, W, B, B, N, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, D, C, B, N, N, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, E, B, N, N, N, N, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, N, N, N, N, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, F, F, N, N, N, N, B, B, W, W, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, W, B, B, F, F, F, F, F, F, N, N, N, N, B, B, W, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, W, B, B, B, B, F, F, F, F, F, N, N, N, B, B, W, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, B, B, F, F, F, F, F, N, B, B, W, W, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, F, F, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, F, F, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, B, B, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -361,7 +553,7 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 	};
 	
-	public static int[] SELL = {
+	public static readonly int[] Dollar = {
 		0, 0, 0, 0, W, W, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, W, B, B, W, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, W, W, W, B, B, W, B, B, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -396,7 +588,7 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	};
 	
-	public static int[] CHAT_SHARE = {
+	public static readonly int[] Magnifier = {
 		0, 0, 0, 0, 0, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, W, W, W, B, B, B, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, W, W, B, B, B, B, B, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 

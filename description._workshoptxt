@@ -6,3 +6,4 @@ Replaces the cursor with the native operating system's cursor
 - Added contextual cursors for smart cursor, quick trash, favourite, etc.
 - Config to change contextual cursor graphics, with some custom graphics provided
 - Has options for larger and brighter cursors
+- [url=https://github.com/alexw5335/NativeCursor]Source Code[/url]

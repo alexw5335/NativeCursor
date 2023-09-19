@@ -16,11 +16,12 @@ using Terraria.ModLoader.Config.UI;
 using Terraria.ModLoader.UI;
 using Terraria.UI;
 
-
 namespace NativeCursor;
 
 
+
 // Taken from https://github.com/487666123/ImproveGame/blob/1.4.4/Common/Configs/Elements/PresetElement.cs
+// Button for setting the large cursor preset
 public class LargeCursorElement : ConfigElement {
 	
 	public override void LeftClick(UIMouseEvent evt) {
@@ -32,14 +33,13 @@ public class LargeCursorElement : ConfigElement {
 		config.FavouriteCursor   = CursorGraphic.LargePin;
 		config.ChatShareCursor   = CursorGraphic.LargeMagnifier;
 		config.SellCursor        = CursorGraphic.LargeDollar;
-		SetObject(true);
+		SetObject(true); // Notify changes to config
 	}
 
 	public override void OnBind() {
 		base.OnBind();
 		Height.Set(30F, 0F);
 		DrawLabel = false;
-		
 		Append(new UIText(Label, 0.4f, true) {
 			TextOriginX = 0.5f,
 			TextOriginY = 0.5f,
@@ -54,7 +54,6 @@ public class LargeCursorElement : ConfigElement {
 		var pos = new Vector2(dimensions.X, dimensions.Y);
 		var color = IsMouseHovering ? UICommon.DefaultUIBlue : UICommon.DefaultUIBlue.MultiplyRGBA(new Color(180, 180, 180));
 		DrawPanel2(spriteBatch, pos, TextureAssets.SettingsPanel.Value, num, dimensions.Height, color);
-
 		base.DrawSelf(spriteBatch);
 	}
 	
@@ -85,6 +84,7 @@ public enum CursorGraphic {
 	BrightRed,
 	BrightGreen,
 	
+	// Large custom cursors
 	LargeGold,
 	LargeBin,
 	LargePin,
@@ -126,8 +126,7 @@ public class NativeCursorConfig : ModConfig {
 
 	[CustomModConfigItem(typeof(LargeCursorElement))]
 	public bool LargeCursorPreset;
-
-
+	
 	public override ConfigScope Mode => ConfigScope.ClientSide;
 	
 	public override void OnChanged() {
@@ -166,6 +165,7 @@ public class NativeCursorModSystem : ModSystem {
 
 
 public class NativeCursor : Mod {
+	
 	
 	// SDL cursor handles that correspond to TextureAssets::cursors
 	// The cursor to be displayed is determined by Main::mouseOverride and Main::SmartCursorIsUsed
@@ -222,7 +222,8 @@ public class NativeCursor : Mod {
 	}
 	
 	
-	public static void Init() {
+	
+	private static void Init() {
 		ConfigCursors[(int) CursorGraphic.NativeArrow] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 		ConfigCursors[(int) CursorGraphic.NativeHand] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 		ConfigCursors[(int) CursorGraphic.NativeIBeam] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
@@ -245,8 +246,8 @@ public class NativeCursor : Mod {
 		ConfigCursors[(int) CursorGraphic.LargePin] = createLargeCursor(Textures.Pin, 1, 1);
 		ConfigCursors[(int) CursorGraphic.LargeMagnifier] = createLargeCursor(Textures.Magnifier, 7, 7);
 		ConfigCursors[(int) CursorGraphic.LargeDollar] = createLargeCursor(Textures.Dollar, 7, 0);
-		ConfigCursors[(int) CursorGraphic.LargeBrightRed] = createLargeCursor(Textures.Red, 2, 2);
-		ConfigCursors[(int) CursorGraphic.LargeBrightGreen] = createLargeCursor(Textures.Green, 2, 2);
+		ConfigCursors[(int) CursorGraphic.LargeBrightRed] = createLargeCursor(Textures.Red, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LargeBrightGreen] = createLargeCursor(Textures.Green, 1, 1);
 		ConfigCursors[(int) CursorGraphic.LargeArrow] = createLargeCursor(Textures.Arrow, 0, 0);
 	}
 	
@@ -267,6 +268,7 @@ public class NativeCursor : Mod {
 	}
 
 
+	
 	public override void Unload() {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
 		Main.mouseColor = previousMouseColour;

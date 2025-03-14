@@ -27,12 +27,12 @@ public class LargeCursorElement : ConfigElement {
 	public override void LeftClick(UIMouseEvent evt) {
 		base.LeftClick(evt);
 		if (Item is not NativeCursorConfig config) return;
-		config.DefaultCursor     = CursorGraphic.LargeArrow;
-		config.SmartCursorCursor = CursorGraphic.LargeGold;
-		config.QuickTrashCursor  = CursorGraphic.LargeBin;
-		config.FavouriteCursor   = CursorGraphic.LargePin;
-		config.ChatShareCursor   = CursorGraphic.LargeMagnifier;
-		config.SellCursor        = CursorGraphic.LargeDollar;
+		config.defaultCursor     = CursorGraphic.LARGE_ARROW;
+		config.smartCursorCursor = CursorGraphic.LARGE_GOLD;
+		config.quickTrashCursor  = CursorGraphic.LARGE_BIN;
+		config.favouriteCursor   = CursorGraphic.LARGE_PIN;
+		config.chatShareCursor   = CursorGraphic.LARGE_MAGNIFIER;
+		config.sellCursor        = CursorGraphic.LARGE_DOLLAR;
 		SetObject(true); // Notify changes to config
 	}
 
@@ -64,35 +64,35 @@ public class LargeCursorElement : ConfigElement {
 public enum CursorGraphic {
 	
 	// System cursors, created using SDL.SDL_CreateSystemCursor
-	NativeArrow,
-	NativeHand,
-	NativeIBeam,
-	NativeNo,
-	NativeCrosshair,
-	NativeSizeNWSE,
-	NativeSizeNESW,
-	NativeSizeWE,
-	NativeSizeNS,
-	NativeSizeAll,
+	NATIVE_ARROW,
+	NATIVE_HAND,
+	NATIVE_I_BEAM,
+	NATIVE_NO,
+	NATIVE_CROSSHAIR,
+	NATIVE_SIZE_NWSE,
+	NATIVE_SIZE_NESW,
+	NATIVE_SIZE_WE,
+	NATIVE_SIZE_NS,
+	NATIVE_SIZE_ALL,
 	
 	// Custom cursors, created using SDL.SDL_CreateColorCursor
-	Gold,
-	Bin,
-	Pin,
-	Magnifier,
-	Dollar,
-	BrightRed,
-	BrightGreen,
+	GOLD,
+	BIN,
+	PIN,
+	MAGNIFIER,
+	DOLLAR,
+	BRIGHT_RED,
+	BRIGHT_GREEN,
 	
 	// Large custom cursors
-	LargeGold,
-	LargeBin,
-	LargePin,
-	LargeMagnifier,
-	LargeDollar,
-	LargeBrightRed,
-	LargeBrightGreen,
-	LargeArrow
+	LARGE_GOLD,
+	LARGE_BIN,
+	LARGE_PIN,
+	LARGE_MAGNIFIER,
+	LARGE_DOLLAR,
+	LARGE_BRIGHT_RED,
+	LARGE_BRIGHT_GREEN,
+	LARGE_ARROW
 
 }
 
@@ -100,37 +100,37 @@ public enum CursorGraphic {
 
 public class NativeCursorConfig : ModConfig {
 	
-	[DefaultValue(CursorGraphic.NativeArrow)]
-	public CursorGraphic DefaultCursor;
+	[DefaultValue(CursorGraphic.NATIVE_ARROW)]
+	public CursorGraphic defaultCursor;
 	
-	[DefaultValue(CursorGraphic.Gold)]
-	public CursorGraphic SmartCursorCursor;
+	[DefaultValue(CursorGraphic.GOLD)]
+	public CursorGraphic smartCursorCursor;
 
-	[DefaultValue(CursorGraphic.Bin)]
-	public CursorGraphic QuickTrashCursor;
+	[DefaultValue(CursorGraphic.BIN)]
+	public CursorGraphic quickTrashCursor;
 	
-	[DefaultValue(CursorGraphic.Pin)]
-	public CursorGraphic FavouriteCursor;
+	[DefaultValue(CursorGraphic.PIN)]
+	public CursorGraphic favouriteCursor;
 	
-	[DefaultValue(CursorGraphic.Magnifier)]
-	public CursorGraphic ChatShareCursor;
+	[DefaultValue(CursorGraphic.MAGNIFIER)]
+	public CursorGraphic chatShareCursor;
 	
-	[DefaultValue(CursorGraphic.Dollar)]
-	public CursorGraphic SellCursor;
+	[DefaultValue(CursorGraphic.DOLLAR)]
+	public CursorGraphic sellCursor;
 	
-	[DefaultValue(CursorGraphic.NativeSizeNS)]
-	public CursorGraphic TransferCursor;
+	[DefaultValue(CursorGraphic.NATIVE_SIZE_NS)]
+	public CursorGraphic transferCursor;
 	
-	[DefaultValue(CursorGraphic.NativeSizeWE)]
-	public CursorGraphic UnequipCursor;
+	[DefaultValue(CursorGraphic.NATIVE_SIZE_WE)]
+	public CursorGraphic unequipCursor;
 
 	[CustomModConfigItem(typeof(LargeCursorElement))]
-	public bool LargeCursorPreset;
+	public bool largeCursorPreset;
 	
 	public override ConfigScope Mode => ConfigScope.ClientSide;
 	
 	public override void OnChanged() {
-		NativeCursor.ReloadCursors(this);
+		NativeCursor.reloadCursors(this);
 	}
 	
 }
@@ -170,7 +170,7 @@ public class NativeCursor : Mod {
 	// SDL cursor handles that correspond to TextureAssets::cursors
 	// The cursor to be displayed is determined by Main::mouseOverride and Main::SmartCursorIsUsed
 	public static IntPtr[] Cursors = new IntPtr[TextureAssets.Cursors.Length];
-	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.LargeArrow + 1];
+	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.LARGE_ARROW + 1];
 
 	// Restore mouse colours on Unload. These are set in Load.
 	private Color previousMouseColour = Color.Black;
@@ -203,52 +203,52 @@ public class NativeCursor : Mod {
 	
 	
 	
-	public static void ReloadCursors(NativeCursorConfig config) {
+	public static void reloadCursors(NativeCursorConfig config) {
 		for (var i = 0; i < Cursors.Length; i++)
-			Cursors[i] = ConfigCursors[(int) config.DefaultCursor];
-		Cursors[0] = ConfigCursors[(int) config.DefaultCursor];
-		Cursors[1] = ConfigCursors[(int) config.SmartCursorCursor];
-		Cursors[2] = ConfigCursors[(int) config.ChatShareCursor];
-		Cursors[3] = ConfigCursors[(int) config.FavouriteCursor];
-		Cursors[6] = ConfigCursors[(int) config.QuickTrashCursor];
-		Cursors[7] = ConfigCursors[(int) config.UnequipCursor];
-		Cursors[8] = ConfigCursors[(int) config.TransferCursor];
-		Cursors[9] = ConfigCursors[(int) config.TransferCursor];
-		Cursors[10] = ConfigCursors[(int) config.SellCursor];
+			Cursors[i] = ConfigCursors[(int) config.defaultCursor];
+		Cursors[0] = ConfigCursors[(int) config.defaultCursor];
+		Cursors[1] = ConfigCursors[(int) config.smartCursorCursor];
+		Cursors[2] = ConfigCursors[(int) config.chatShareCursor];
+		Cursors[3] = ConfigCursors[(int) config.favouriteCursor];
+		Cursors[6] = ConfigCursors[(int) config.quickTrashCursor];
+		Cursors[7] = ConfigCursors[(int) config.unequipCursor];
+		Cursors[8] = ConfigCursors[(int) config.transferCursor];
+		Cursors[9] = ConfigCursors[(int) config.transferCursor];
+		Cursors[10] = ConfigCursors[(int) config.sellCursor];
 		// Cursors 4 and 5 are used for the capture interface but are never used as cursor overrides
 		// AutoTrash sets the cursor override to 5 for some reason, so this is included for compatibility
-		Cursors[5] = ConfigCursors[(int) config.QuickTrashCursor];
+		Cursors[5] = ConfigCursors[(int) config.quickTrashCursor];
 		SDL.SDL_SetCursor(Cursors[0]); // restore cursor in case smart cursor is being used in the main menu
 	}
 	
 	
 	
-	private static void Init() {
-		ConfigCursors[(int) CursorGraphic.NativeArrow] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-		ConfigCursors[(int) CursorGraphic.NativeHand] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-		ConfigCursors[(int) CursorGraphic.NativeIBeam] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-		ConfigCursors[(int) CursorGraphic.NativeNo] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
-		ConfigCursors[(int) CursorGraphic.NativeCrosshair] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-		ConfigCursors[(int) CursorGraphic.NativeSizeNWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-		ConfigCursors[(int) CursorGraphic.NativeSizeNESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-		ConfigCursors[(int) CursorGraphic.NativeSizeWE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-		ConfigCursors[(int) CursorGraphic.NativeSizeNS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-		ConfigCursors[(int) CursorGraphic.NativeSizeAll] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-		ConfigCursors[(int) CursorGraphic.Gold] = createCursor(Textures.Gold, 1, 1);
-		ConfigCursors[(int) CursorGraphic.Bin] = createCursor(Textures.Bin, 9, 0);
-		ConfigCursors[(int) CursorGraphic.Pin] = createCursor(Textures.Pin, 1, 1);
-		ConfigCursors[(int) CursorGraphic.Magnifier] = createCursor(Textures.Magnifier, 7, 7);
-		ConfigCursors[(int) CursorGraphic.Dollar] = createCursor(Textures.Dollar, 7, 0);
-		ConfigCursors[(int) CursorGraphic.BrightRed] = createCursor(Textures.Red, 1, 1);
-		ConfigCursors[(int) CursorGraphic.BrightGreen] = createCursor(Textures.Green, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LargeGold] = createLargeCursor(Textures.Gold, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LargeBin] = createLargeCursor(Textures.Bin, 9, 0);
-		ConfigCursors[(int) CursorGraphic.LargePin] = createLargeCursor(Textures.Pin, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LargeMagnifier] = createLargeCursor(Textures.Magnifier, 7, 7);
-		ConfigCursors[(int) CursorGraphic.LargeDollar] = createLargeCursor(Textures.Dollar, 7, 0);
-		ConfigCursors[(int) CursorGraphic.LargeBrightRed] = createLargeCursor(Textures.Red, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LargeBrightGreen] = createLargeCursor(Textures.Green, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LargeArrow] = createLargeCursor(Textures.Arrow, 0, 0);
+	private static void init() {
+		ConfigCursors[(int) CursorGraphic.NATIVE_ARROW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+		ConfigCursors[(int) CursorGraphic.NATIVE_HAND] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		ConfigCursors[(int) CursorGraphic.NATIVE_I_BEAM] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+		ConfigCursors[(int) CursorGraphic.NATIVE_NO] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+		ConfigCursors[(int) CursorGraphic.NATIVE_CROSSHAIR] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_WE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_ALL] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+		ConfigCursors[(int) CursorGraphic.GOLD] = createCursor(Textures.gold, 1, 1);
+		ConfigCursors[(int) CursorGraphic.BIN] = createCursor(Textures.bin, 9, 0);
+		ConfigCursors[(int) CursorGraphic.PIN] = createCursor(Textures.pin, 1, 1);
+		ConfigCursors[(int) CursorGraphic.MAGNIFIER] = createCursor(Textures.magnifier, 7, 7);
+		ConfigCursors[(int) CursorGraphic.DOLLAR] = createCursor(Textures.dollar, 7, 0);
+		ConfigCursors[(int) CursorGraphic.BRIGHT_RED] = createCursor(Textures.red, 1, 1);
+		ConfigCursors[(int) CursorGraphic.BRIGHT_GREEN] = createCursor(Textures.green, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LARGE_GOLD] = createLargeCursor(Textures.gold, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LARGE_BIN] = createLargeCursor(Textures.bin, 9, 0);
+		ConfigCursors[(int) CursorGraphic.LARGE_PIN] = createLargeCursor(Textures.pin, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LARGE_MAGNIFIER] = createLargeCursor(Textures.magnifier, 7, 7);
+		ConfigCursors[(int) CursorGraphic.LARGE_DOLLAR] = createLargeCursor(Textures.dollar, 7, 0);
+		ConfigCursors[(int) CursorGraphic.LARGE_BRIGHT_RED] = createLargeCursor(Textures.red, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LARGE_BRIGHT_GREEN] = createLargeCursor(Textures.green, 1, 1);
+		ConfigCursors[(int) CursorGraphic.LARGE_ARROW] = createLargeCursor(Textures.arrow, 0, 0);
 	}
 	
 	
@@ -258,13 +258,13 @@ public class NativeCursor : Mod {
 		previousMouseColour = Main.mouseColor;
 		previousMouseBorderColour = Main.MouseBorderColor;
 		Main.MouseBorderColor = Color.Transparent; // Disable drawing of the cursor's outline and background
-		IL_Main.DrawCursor += Ret;
-		IL_Main.DrawInterface_36_Cursor += Ret;
-		IL_Main.DoUpdate += HideCursor;
-		Terraria.Graphics.Capture.IL_CaptureInterface.Draw += HideCaptureCursor;
-		if (!initialised) Init();
+		IL_Main.DrawCursor += ret;
+		IL_Main.DrawInterface_36_Cursor += ret;
+		IL_Main.DoUpdate += hideCursor;
+		Terraria.Graphics.Capture.IL_CaptureInterface.Draw += hideCaptureCursor;
+		if (!initialised) init();
 		initialised = true;
-		ReloadCursors(ModContent.GetInstance<NativeCursorConfig>());
+		reloadCursors(ModContent.GetInstance<NativeCursorConfig>());
 	}
 
 
@@ -273,22 +273,22 @@ public class NativeCursor : Mod {
 		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
 		Main.mouseColor = previousMouseColour;
 		Main.MouseBorderColor = previousMouseBorderColour;
-		IL_Main.DrawCursor -= Ret;
-		IL_Main.DrawInterface_36_Cursor -= Ret;
-		IL_Main.DoUpdate -= HideCursor;
-		Terraria.Graphics.Capture.IL_CaptureInterface.Draw -= HideCaptureCursor;
+		IL_Main.DrawCursor -= ret;
+		IL_Main.DrawInterface_36_Cursor -= ret;
+		IL_Main.DoUpdate -= hideCursor;
+		Terraria.Graphics.Capture.IL_CaptureInterface.Draw -= hideCaptureCursor;
 	}
 	
 	
 	
 	// Early return from methods that draw the game's custom cursor
-	private static void Ret(ILContext context) => new ILCursor(context).Emit(OpCodes.Ret);
+	private static void ret(ILContext context) => new ILCursor(context).Emit(OpCodes.Ret);
 	
 	
 	
 	// Main::DoUpdate
-	// isMouseVisible = false -> isMouseVisible = true
-	private static void HideCursor(ILContext context) {
+	// Should be much simpler but kept running into invalid IL errors when removing the if statement
+	private static void hideCursor(ILContext context) {
 		var cursor = new ILCursor(context);
 		var method = typeof(Main).GetMethod("set_IsMouseVisible");
 		if (method == null) throw new Exception();
@@ -297,16 +297,20 @@ public class NativeCursor : Mod {
 			cursor.GotoPrev();
 			cursor.Remove();
 			cursor.Emit(OpCodes.Ldc_I4_1);
+			cursor.GotoNext();
+			cursor.Emit(OpCodes.Ldarg_0);
+			cursor.Emit(OpCodes.Ldc_I4_1);
+			cursor.EmitCall(method);
+			break;
 		}
 	}
-
+	
 	
 
 	// CaptureInterface::Draw
 	// Prevent call to DrawCursorSingle
-	private static void HideCaptureCursor(ILContext context) {
+	private static void hideCaptureCursor(ILContext context) {
 		var cursor = new ILCursor(context);
-		Console.WriteLine(cursor.Instrs[81]);
 		cursor.Goto(72);
 		cursor.RemoveRange(10);
 	}
@@ -345,7 +349,7 @@ public class Textures {
 		return enlarged;
 	}
 	
-	public static readonly int[] Green = {
+	public static readonly int[] green = [
 		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -377,10 +381,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
-	public static readonly int[] Red = {
+	public static readonly int[] red = [
 		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -412,10 +416,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 
-	public static readonly int[] Arrow = {
+	public static readonly int[] arrow = [
 		B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		B, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		B, W, B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -447,10 +451,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
-	public static readonly int[] Bin = {
+	public static readonly int[] bin = [
 		0, 0, 0, 0, 0, 0, W, W, W, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, W, W, B, B, B, B, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, W, W, W, W, W, B, D, D, D, D, D, D, B, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -482,10 +486,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 
-	public static readonly int[] Gold = {
+	public static readonly int[] gold = [
 		W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -517,10 +521,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
-	public static readonly int[] Pin = {
+	public static readonly int[] pin = [
 		W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		W, D, C, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		W, E, D, C, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -552,10 +556,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
-	public static readonly int[] Dollar = {
+	public static readonly int[] dollar = [
 		0, 0, 0, 0, W, W, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, W, B, B, W, B, B, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, W, W, W, B, B, W, B, B, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -587,10 +591,10 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
-	public static readonly int[] Magnifier = {
+	public static readonly int[] magnifier = [
 		0, 0, 0, 0, 0, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, W, W, W, B, B, B, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, W, W, B, B, B, B, B, B, B, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -622,7 +626,7 @@ public class Textures {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	};
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	];
 	
 }

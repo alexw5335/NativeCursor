@@ -51,6 +51,46 @@ Configs: {
 			Label: Large Cursor Preset
 			Tooltip: ""
 		}
+
+		defaultCursor: {
+			Label: default Cursor
+			Tooltip: ""
+		}
+
+		smartCursorCursor: {
+			Label: smart Cursor Cursor
+			Tooltip: ""
+		}
+
+		quickTrashCursor: {
+			Label: quick Trash Cursor
+			Tooltip: ""
+		}
+
+		favouriteCursor: {
+			Label: favourite Cursor
+			Tooltip: ""
+		}
+
+		chatShareCursor: {
+			Label: chat Share Cursor
+			Tooltip: ""
+		}
+
+		sellCursor: {
+			Label: sell Cursor
+			Tooltip: ""
+		}
+
+		transferCursor: {
+			Label: transfer Cursor
+			Tooltip: ""
+		}
+
+		unequipCursor: {
+			Label: unequip Cursor
+			Tooltip: ""
+		}
 	}
 
 	CursorGraphic: {
@@ -80,5 +120,30 @@ Configs: {
 		LargeBrightRed.Label: Large Bright Red
 		LargeBrightGreen.Label: Large Bright Green
 		LargeArrow.Label: Large Arrow
+		NATIVE_ARROW.Label: N A T I V E_ A R R O W
+		NATIVE_HAND.Label: N A T I V E_ H A N D
+		NATIVE_I_BEAM.Label: N A T I V E_ I_ B E A M
+		NATIVE_NO.Label: N A T I V E_ N O
+		NATIVE_CROSSHAIR.Label: N A T I V E_ C R O S S H A I R
+		NATIVE_SIZE_NWSE.Label: N A T I V E_ S I Z E_ N W S E
+		NATIVE_SIZE_NESW.Label: N A T I V E_ S I Z E_ N E S W
+		NATIVE_SIZE_WE.Label: N A T I V E_ S I Z E_ W E
+		NATIVE_SIZE_NS.Label: N A T I V E_ S I Z E_ N S
+		NATIVE_SIZE_ALL.Label: N A T I V E_ S I Z E_ A L L
+		GOLD.Label: G O L D
+		BIN.Label: B I N
+		PIN.Label: P I N
+		MAGNIFIER.Label: M A G N I F I E R
+		DOLLAR.Label: D O L L A R
+		BRIGHT_RED.Label: B R I G H T_ R E D
+		BRIGHT_GREEN.Label: B R I G H T_ G R E E N
+		LARGE_GOLD.Label: L A R G E_ G O L D
+		LARGE_BIN.Label: L A R G E_ B I N
+		LARGE_PIN.Label: L A R G E_ P I N
+		LARGE_MAGNIFIER.Label: L A R G E_ M A G N I F I E R
+		LARGE_DOLLAR.Label: L A R G E_ D O L L A R
+		LARGE_BRIGHT_RED.Label: L A R G E_ B R I G H T_ R E D
+		LARGE_BRIGHT_GREEN.Label: L A R G E_ B R I G H T_ G R E E N
+		LARGE_ARROW.Label: L A R G E_ A R R O W
 	}
 }

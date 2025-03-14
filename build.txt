@@ -1,4 +1,4 @@
 displayName = Native Cursor
 author = placeholder
-version = 1.8.1
+version = 1.9
 side = client

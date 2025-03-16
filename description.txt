@@ -1,8 +1,9 @@
 Replaces the cursor with the native operating system's cursor
+- Doesn't work on Mac. Only tested on Windows
 - Updated to 1.4.4
 - Fixes laggy/floaty cursor, which is caused by v-sync
 - Probably incompatible with any mods that change the cursor
-- Only tested on Windows, may not work on all operating systems
 - Added contextual cursors for smart cursor, quick trash, favourite, etc.
 - Config to change contextual cursor graphics, with some custom graphics provided
 - Has options for larger and brighter cursors
+

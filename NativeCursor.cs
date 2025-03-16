@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using ReLogic.OS;
 using SDL2;
 using static SDL2.SDL.SDL_SystemCursor;
 using Terraria;
@@ -144,20 +145,21 @@ public class NativeCursorModSystem : ModSystem {
 	
 	// Restores the cursor to normal when exiting to main menu in case smart cursor is still active
 	public override void OnWorldUnload() {
-		if(Main.netMode == NetmodeID.Server || Main.instance == null) return; 
+		if(NativeCursor.disabled()) return;
 		if (currentIndex == 0) return;
 		currentIndex = 0;
-		SDL.SDL_SetCursor(NativeCursor.Cursors[0]);
+		SDL.SDL_SetCursor(NativeCursor.cursors[0]);
 	}
 	
 	// Note: Not called in main menu
 	public override void PostDrawInterface(SpriteBatch spriteBatch) {
+		if(NativeCursor.disabled()) return;
 		var index = Main.cursorOverride;
 		if (index <= 1 && Main.SmartCursorIsUsed) index = 1;
-		if (index < 0 || index > NativeCursor.Cursors.Length) index = 0;
+		if (index < 0 || index > NativeCursor.cursors.Length) index = 0;
 		if (index == currentIndex) return;
 		currentIndex = index;
-		SDL.SDL_SetCursor(NativeCursor.Cursors[index]);
+		SDL.SDL_SetCursor(NativeCursor.cursors[index]);
 	}
 	
 }
@@ -169,15 +171,18 @@ public class NativeCursor : Mod {
 	
 	// SDL cursor handles that correspond to TextureAssets::cursors
 	// The cursor to be displayed is determined by Main::mouseOverride and Main::SmartCursorIsUsed
-	public static IntPtr[] Cursors = new IntPtr[TextureAssets.Cursors.Length];
-	public static IntPtr[] ConfigCursors = new IntPtr[(int) CursorGraphic.LARGE_ARROW + 1];
+	public static IntPtr[] cursors = new IntPtr[TextureAssets.Cursors.Length];
+	public static IntPtr[] configCursors = new IntPtr[(int) CursorGraphic.LARGE_ARROW + 1];
 
 	// Restore mouse colours on Unload. These are set in Load.
 	private Color previousMouseColour = Color.Black;
 	private Color previousMouseBorderColour = Color.Black;
 	
 	private static bool initialised;
-	
+		
+	public static bool disabled() => Main.netMode == NetmodeID.Server || Main.instance == null || Platform.IsOSX;
+
+
 	
 	
 	// Must add "-unsafe true" to commandLineArgs in Properties/launchSettings.json
@@ -204,57 +209,58 @@ public class NativeCursor : Mod {
 	
 	
 	public static void reloadCursors(NativeCursorConfig config) {
-		for (var i = 0; i < Cursors.Length; i++)
-			Cursors[i] = ConfigCursors[(int) config.defaultCursor];
-		Cursors[0] = ConfigCursors[(int) config.defaultCursor];
-		Cursors[1] = ConfigCursors[(int) config.smartCursorCursor];
-		Cursors[2] = ConfigCursors[(int) config.chatShareCursor];
-		Cursors[3] = ConfigCursors[(int) config.favouriteCursor];
-		Cursors[6] = ConfigCursors[(int) config.quickTrashCursor];
-		Cursors[7] = ConfigCursors[(int) config.unequipCursor];
-		Cursors[8] = ConfigCursors[(int) config.transferCursor];
-		Cursors[9] = ConfigCursors[(int) config.transferCursor];
-		Cursors[10] = ConfigCursors[(int) config.sellCursor];
+		if(disabled()) return;
+		for (var i = 0; i < cursors.Length; i++)
+			cursors[i] = configCursors[(int) config.defaultCursor];
+		cursors[0] = configCursors[(int) config.defaultCursor];
+		cursors[1] = configCursors[(int) config.smartCursorCursor];
+		cursors[2] = configCursors[(int) config.chatShareCursor];
+		cursors[3] = configCursors[(int) config.favouriteCursor];
+		cursors[6] = configCursors[(int) config.quickTrashCursor];
+		cursors[7] = configCursors[(int) config.unequipCursor];
+		cursors[8] = configCursors[(int) config.transferCursor];
+		cursors[9] = configCursors[(int) config.transferCursor];
+		cursors[10] = configCursors[(int) config.sellCursor];
 		// Cursors 4 and 5 are used for the capture interface but are never used as cursor overrides
 		// AutoTrash sets the cursor override to 5 for some reason, so this is included for compatibility
-		Cursors[5] = ConfigCursors[(int) config.quickTrashCursor];
-		SDL.SDL_SetCursor(Cursors[0]); // restore cursor in case smart cursor is being used in the main menu
+		cursors[5] = configCursors[(int) config.quickTrashCursor];
+		SDL.SDL_SetCursor(cursors[0]); // restore cursor in case smart cursor is being used in the main menu
 	}
 	
 	
 	
 	private static void init() {
-		ConfigCursors[(int) CursorGraphic.NATIVE_ARROW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-		ConfigCursors[(int) CursorGraphic.NATIVE_HAND] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-		ConfigCursors[(int) CursorGraphic.NATIVE_I_BEAM] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-		ConfigCursors[(int) CursorGraphic.NATIVE_NO] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
-		ConfigCursors[(int) CursorGraphic.NATIVE_CROSSHAIR] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_WE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_NS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-		ConfigCursors[(int) CursorGraphic.NATIVE_SIZE_ALL] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-		ConfigCursors[(int) CursorGraphic.GOLD] = createCursor(Textures.gold, 1, 1);
-		ConfigCursors[(int) CursorGraphic.BIN] = createCursor(Textures.bin, 9, 0);
-		ConfigCursors[(int) CursorGraphic.PIN] = createCursor(Textures.pin, 1, 1);
-		ConfigCursors[(int) CursorGraphic.MAGNIFIER] = createCursor(Textures.magnifier, 7, 7);
-		ConfigCursors[(int) CursorGraphic.DOLLAR] = createCursor(Textures.dollar, 7, 0);
-		ConfigCursors[(int) CursorGraphic.BRIGHT_RED] = createCursor(Textures.red, 1, 1);
-		ConfigCursors[(int) CursorGraphic.BRIGHT_GREEN] = createCursor(Textures.green, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LARGE_GOLD] = createLargeCursor(Textures.gold, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LARGE_BIN] = createLargeCursor(Textures.bin, 9, 0);
-		ConfigCursors[(int) CursorGraphic.LARGE_PIN] = createLargeCursor(Textures.pin, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LARGE_MAGNIFIER] = createLargeCursor(Textures.magnifier, 7, 7);
-		ConfigCursors[(int) CursorGraphic.LARGE_DOLLAR] = createLargeCursor(Textures.dollar, 7, 0);
-		ConfigCursors[(int) CursorGraphic.LARGE_BRIGHT_RED] = createLargeCursor(Textures.red, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LARGE_BRIGHT_GREEN] = createLargeCursor(Textures.green, 1, 1);
-		ConfigCursors[(int) CursorGraphic.LARGE_ARROW] = createLargeCursor(Textures.arrow, 0, 0);
+		configCursors[(int) CursorGraphic.NATIVE_ARROW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+		configCursors[(int) CursorGraphic.NATIVE_HAND] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		configCursors[(int) CursorGraphic.NATIVE_I_BEAM] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+		configCursors[(int) CursorGraphic.NATIVE_NO] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+		configCursors[(int) CursorGraphic.NATIVE_CROSSHAIR] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+		configCursors[(int) CursorGraphic.NATIVE_SIZE_NWSE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+		configCursors[(int) CursorGraphic.NATIVE_SIZE_NESW] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+		configCursors[(int) CursorGraphic.NATIVE_SIZE_WE] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+		configCursors[(int) CursorGraphic.NATIVE_SIZE_NS] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+		configCursors[(int) CursorGraphic.NATIVE_SIZE_ALL] = SDL.SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+		configCursors[(int) CursorGraphic.GOLD] = createCursor(Textures.gold, 1, 1);
+		configCursors[(int) CursorGraphic.BIN] = createCursor(Textures.bin, 9, 0);
+		configCursors[(int) CursorGraphic.PIN] = createCursor(Textures.pin, 1, 1);
+		configCursors[(int) CursorGraphic.MAGNIFIER] = createCursor(Textures.magnifier, 7, 7);
+		configCursors[(int) CursorGraphic.DOLLAR] = createCursor(Textures.dollar, 7, 0);
+		configCursors[(int) CursorGraphic.BRIGHT_RED] = createCursor(Textures.red, 1, 1);
+		configCursors[(int) CursorGraphic.BRIGHT_GREEN] = createCursor(Textures.green, 1, 1);
+		configCursors[(int) CursorGraphic.LARGE_GOLD] = createLargeCursor(Textures.gold, 1, 1);
+		configCursors[(int) CursorGraphic.LARGE_BIN] = createLargeCursor(Textures.bin, 9, 0);
+		configCursors[(int) CursorGraphic.LARGE_PIN] = createLargeCursor(Textures.pin, 1, 1);
+		configCursors[(int) CursorGraphic.LARGE_MAGNIFIER] = createLargeCursor(Textures.magnifier, 7, 7);
+		configCursors[(int) CursorGraphic.LARGE_DOLLAR] = createLargeCursor(Textures.dollar, 7, 0);
+		configCursors[(int) CursorGraphic.LARGE_BRIGHT_RED] = createLargeCursor(Textures.red, 1, 1);
+		configCursors[(int) CursorGraphic.LARGE_BRIGHT_GREEN] = createLargeCursor(Textures.green, 1, 1);
+		configCursors[(int) CursorGraphic.LARGE_ARROW] = createLargeCursor(Textures.arrow, 0, 0);
 	}
 	
 	
 	
 	public override void Load() {
-		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
+		if(disabled()) return;
 		previousMouseColour = Main.mouseColor;
 		previousMouseBorderColour = Main.MouseBorderColor;
 		Main.MouseBorderColor = Color.Transparent; // Disable drawing of the cursor's outline and background
@@ -270,7 +276,7 @@ public class NativeCursor : Mod {
 
 	
 	public override void Unload() {
-		if(Main.netMode == NetmodeID.Server || Main.instance == null) return;
+		if(disabled()) return;
 		Main.mouseColor = previousMouseColour;
 		Main.MouseBorderColor = previousMouseBorderColour;
 		IL_Main.DrawCursor -= ret;
@@ -287,7 +293,7 @@ public class NativeCursor : Mod {
 	
 	
 	// Main::DoUpdate
-	// Should be much simpler but kept running into invalid IL errors when removing the if statement
+	// isMouseVisible = false -> isMouseVisible = true
 	private static void hideCursor(ILContext context) {
 		var cursor = new ILCursor(context);
 		var method = typeof(Main).GetMethod("set_IsMouseVisible");
@@ -297,10 +303,6 @@ public class NativeCursor : Mod {
 			cursor.GotoPrev();
 			cursor.Remove();
 			cursor.Emit(OpCodes.Ldc_I4_1);
-			cursor.GotoNext();
-			cursor.Emit(OpCodes.Ldarg_0);
-			cursor.Emit(OpCodes.Ldc_I4_1);
-			cursor.EmitCall(method);
 			break;
 		}
 	}
